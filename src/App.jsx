@@ -542,19 +542,38 @@ export default function GRECOCommand() {
       const raw = data.content?.[0]?.text || "";
       let parsed = { mensaje: raw, actualizaciones: null, modo: "operacion" };
       try {
-        const clean = raw.replace(/```json|```/g, "").trim();
-        const attempt = JSON.parse(clean);
-        if (attempt && attempt.mensaje !== undefined) {
-          // Strip any JSON objects/arrays that leaked into mensaje
-          let msg = String(attempt.mensaje);
-          // Remove anything from first { or [ that looks like JSON data
-          const jsonStart = msg.search(/[,{][\s]*"[a-z_]+"/);
-          if (jsonStart > 20) msg = msg.substring(0, jsonStart).trim();
-          // Remove trailing punctuation artifacts
-          msg = msg.replace(/[,{]\s*$/, "").trim();
-          parsed = { ...attempt, mensaje: msg || "..." };
+        // Try to extract JSON from the raw response - handle cases where model wraps in text
+        let jsonStr = raw.replace(/```json|```/g, "").trim();
+        // If raw starts with { "mensaje": it means the model returned JSON as plain text
+        // Find the outermost JSON object
+        const firstBrace = jsonStr.indexOf("{");
+        const lastBrace = jsonStr.lastIndexOf("}");
+        if (firstBrace !== -1 && lastBrace !== -1) {
+          jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
         }
-      } catch {}
+        const attempt = JSON.parse(jsonStr);
+        if (attempt && typeof attempt.mensaje === "string") {
+          // Clean mensaje - remove any leaked JSON data after the conversational text
+          let msg = attempt.mensaje;
+          // Find where JSON data starts leaking into the message
+          const leakPatterns = [
+            /",\s*"actualizaciones"/,
+            /",\s*"alumnos"\s*:/,
+            /\{\s*"id"\s*:/,
+            /\[\s*\{\s*"id"/
+          ];
+          for (const pattern of leakPatterns) {
+            const idx = msg.search(pattern);
+            if (idx > 0) { msg = msg.substring(0, idx).trim(); break; }
+          }
+          // Remove trailing comma or quote
+          msg = msg.replace(/[,"]\s*$/, "").trim();
+          parsed = { ...attempt, mensaje: msg || "Procesado." };
+        }
+      } catch(e) {
+        // If JSON parse fails entirely, show a clean error
+        parsed = { mensaje: "Error procesando respuesta. Intentá de nuevo.", actualizaciones: null, modo: "operacion" };
+      }
       let newState = currentState;
       if (parsed.actualizaciones) {
         newState = mergeDeep(currentState, parsed.actualizaciones);
