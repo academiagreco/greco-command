@@ -591,8 +591,6 @@ export default function GRECOCommand() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
           system: buildSystemPrompt(academyState),
           messages: [{ role: "user", content: "Generá un informe ejecutivo quincenal. Respondé SOLO con JSON válido con esta estructura exacta: {\"periodo\": \"string\", \"puntuacion\": number, \"diagnostico\": \"string\", \"puntos_criticos\": [{\"numero\": 1, \"descripcion\": \"string\", \"accion\": \"string\", \"prioridad\": \"ALTA\"}], \"directiva_principal\": \"string\", \"metas\": \"string\"}. Fecha de hoy: " + dateStr }],
         }),
@@ -688,6 +686,7 @@ export default function GRECOCommand() {
         </div>
         <div className="gc-header-actions">
           <button className="gc-btn gc-btn-panel" onClick={() => setShowMobilePanel(p => !p)}>PANEL</button>
+          <button className="gc-btn gc-btn-report" onClick={generateReport} disabled={loading}>📄 INFORME</button>
           <button className="gc-btn gc-btn-audit" onClick={triggerAudit} disabled={loading}>▶ AUDITAR</button>
           <button className="gc-btn" onClick={resetSystem} disabled={loading}>RESET</button>
         </div>
