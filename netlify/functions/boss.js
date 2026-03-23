@@ -28,7 +28,7 @@ export const handler = async (event) => {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
+        max_tokens: 2000,
         system: body.system,
         messages: body.messages,
       }),
@@ -43,7 +43,7 @@ export const handler = async (event) => {
   } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Error llamando a la API de Anthropic." }),
+      body: JSON.stringify({ error: "Error llamando a la API de Anthropic: " + err.message }),
     };
   }
 };

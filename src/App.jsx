@@ -571,8 +571,13 @@ export default function GRECOCommand() {
           parsed = { ...attempt, mensaje: msg || "Procesado." };
         }
       } catch(e) {
-        // If JSON parse fails entirely, show a clean error
-        parsed = { mensaje: "Error procesando respuesta. Intentá de nuevo.", actualizaciones: null, modo: "operacion" };
+        // Last resort: try to find "mensaje" value manually via regex
+        try {
+          const msgMatch = raw.match(/"mensaje"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+          if (msgMatch) {
+            parsed = { mensaje: msgMatch[1], actualizaciones: null, modo: "operacion" };
+          }
+        } catch(e2) {}
       }
       let newState = currentState;
       if (parsed.actualizaciones) {
