@@ -544,13 +544,15 @@ export default function GRECOCommand() {
       try {
         const clean = raw.replace(/```json|```/g, "").trim();
         const attempt = JSON.parse(clean);
-        // Only use parsed if mensaje is a clean string, not raw JSON
-        if (attempt && typeof attempt.mensaje === "string" && !attempt.mensaje.startsWith("{")) {
-          parsed = attempt;
-        } else if (attempt && typeof attempt.mensaje === "string") {
-          // mensaje contains JSON - extract only the text before the first {
-          const braceIdx = attempt.mensaje.indexOf("{");
-          parsed = { ...attempt, mensaje: braceIdx > 0 ? attempt.mensaje.substring(0, braceIdx).trim() : attempt.mensaje };
+        if (attempt && attempt.mensaje !== undefined) {
+          // Strip any JSON objects/arrays that leaked into mensaje
+          let msg = String(attempt.mensaje);
+          // Remove anything from first { or [ that looks like JSON data
+          const jsonStart = msg.search(/[,{][\s]*"[a-z_]+"/);
+          if (jsonStart > 20) msg = msg.substring(0, jsonStart).trim();
+          // Remove trailing punctuation artifacts
+          msg = msg.replace(/[,{]\s*$/, "").trim();
+          parsed = { ...attempt, mensaje: msg || "..." };
         }
       } catch {}
       let newState = currentState;
