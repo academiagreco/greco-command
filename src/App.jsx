@@ -204,6 +204,8 @@ FORMATO DE RESPUESTA: Siempre JSON válido con exactamente esta estructura:
   "modo": "onboarding" o "operacion" o "auditoria" o "finanzas"
 }
 
+CRÍTICO: El campo "mensaje" debe contener SOLO el texto conversacional para Pablo. NUNCA incluyas JSON, datos técnicos, arrays ni objetos dentro del campo "mensaje". Las actualizaciones van ÚNICAMENTE en el campo "actualizaciones", nunca mezcladas en el texto del mensaje.
+
 Cuando actualizás alumnos, mandá el array COMPLETO de alumnos. Cada alumno tiene: {id, nombre, paquete, precio, pagado, clases_total, clases_dadas, estado, ingreso_fecha}.
 Cuando marcás inicializado como true, incluilo en actualizaciones: {"inicializado": true}.`;
 }
@@ -539,7 +541,18 @@ export default function GRECOCommand() {
       const data = await res.json();
       const raw = data.content?.[0]?.text || "";
       let parsed = { mensaje: raw, actualizaciones: null, modo: "operacion" };
-      try { const clean = raw.replace(/```json|```/g, "").trim(); parsed = JSON.parse(clean); } catch {}
+      try {
+        const clean = raw.replace(/```json|```/g, "").trim();
+        const attempt = JSON.parse(clean);
+        // Only use parsed if mensaje is a clean string, not raw JSON
+        if (attempt && typeof attempt.mensaje === "string" && !attempt.mensaje.startsWith("{")) {
+          parsed = attempt;
+        } else if (attempt && typeof attempt.mensaje === "string") {
+          // mensaje contains JSON - extract only the text before the first {
+          const braceIdx = attempt.mensaje.indexOf("{");
+          parsed = { ...attempt, mensaje: braceIdx > 0 ? attempt.mensaje.substring(0, braceIdx).trim() : attempt.mensaje };
+        }
+      } catch {}
       let newState = currentState;
       if (parsed.actualizaciones) {
         newState = mergeDeep(currentState, parsed.actualizaciones);
