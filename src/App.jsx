@@ -530,10 +530,12 @@ export default function GRECOCommand() {
       : updatedMessages.map((m) => ({ role: m.role, content: m.content }));
 
     try {
-      const res = await fetch("/api/boss", {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 2000,
           system: buildSystemPrompt(currentState),
           messages: apiMessages,
         }),
@@ -626,10 +628,12 @@ export default function GRECOCommand() {
     const totalEgresos = ingresosFijos + publicidad + dgi;
     const saldoReal = m.ingresosMes - totalEgresos;
     try {
-      const res = await fetch("/api/boss", {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
           system: buildSystemPrompt(academyState),
           messages: [{ role: "user", content: "Generá un informe ejecutivo quincenal. Respondé SOLO con JSON válido con esta estructura exacta: {\"periodo\": \"string\", \"puntuacion\": number, \"diagnostico\": \"string\", \"puntos_criticos\": [{\"numero\": 1, \"descripcion\": \"string\", \"accion\": \"string\", \"prioridad\": \"ALTA\"}], \"directiva_principal\": \"string\", \"metas\": \"string\"}. Fecha de hoy: " + dateStr }],
         }),
